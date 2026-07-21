@@ -218,6 +218,10 @@ button.secondary {
 <div class="header">
   <h1>ConvertHub</h1>
   <p>免费在线工具站 · 格式转换 / JWT / 时间戳 / UUID / Markdown</p>
+  <!-- 顶部广告位：可替换为 AdSense / 自卖广告代码 -->
+  <div class="ad-slot" style="margin-top:1rem; padding:0.5rem; background:#1e293b; border:1px dashed #334155; border-radius:8px; text-align:center; color:#64748b; font-size:0.85rem;">
+    广告位（顶部）
+  </div>
 </div>
 
 <div class="container">
@@ -233,6 +237,10 @@ button.secondary {
     <button class="tab" data-tab="markdown">Markdown 预览</button>
     <button class="tab" data-tab="color">颜色转换</button>
     <button class="tab" data-tab="qrcode">QR 码生成</button>
+  </div>
+
+  <div class="ad-area" style="margin: 1.5rem 0; padding: 1rem; background: #1e293b; border: 1px dashed #334155; border-radius: 8px; text-align: center; color: #64748b;">
+    <p style="margin: 0; font-size: 0.9rem;">广告位（信息流横幅）— 准备好后替换为 AdSense 代码</p>
   </div>
 
   <div id="json-yaml" class="converter active">
@@ -452,6 +460,11 @@ button.secondary {
   <div class="ad-area" style="margin-top: 2rem; padding: 1rem; background: #1e293b; border: 1px dashed #334155; border-radius: 8px; text-align: center; color: #64748b;">
     <p style="margin: 0; font-size: 0.9rem;">广告位 / 赞助位 — 联系我们合作</p>
     <p style="margin: 0.5rem 0 0; font-size: 0.8rem; color: #64748b;">本页使用 Google Analytics。</p>
+  </div>
+
+  <div id="cookie-consent" style="position:fixed; bottom:1rem; left:50%; transform:translateX(-50%); background:#1e293b; border:1px solid #334155; border-radius:8px; padding:1rem; display:flex; gap:1rem; align-items:center; color:#e2e8f0; font-size:0.9rem; z-index:999;">
+    <span>本页面使用统计和广告相关脚本，继续即表示同意。</span>
+    <button onclick="document.getElementById('cookie-consent').style.display='none'" style="white-space:nowrap;">同意</button>
   </div>
 </div>
 
