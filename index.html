@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ConvertHub - 在线数据格式转换工具</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+  min-height: 100vh;
+}
+.header {
+  text-align: center;
+  padding: 2rem 1rem;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-bottom: 1px solid #1e293b;
+}
+.header h1 {
+  font-size: 2.5rem;
+  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.5rem;
+}
+.header p {
+  color: #94a3b8;
+  font-size: 1.1rem;
+}
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+.tab {
+  padding: 0.75rem 1.5rem;
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 0.95rem;
+}
+.tab:hover {
+  background: #334155;
+  color: #e2e8f0;
+}
+.tab.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  color: white;
+  border-color: transparent;
+}
+.converter {
+  display: none;
+  gap: 1.5rem;
+}
+.converter.active {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+@media (max-width: 768px) {
+  .converter.active {
+    grid-template-columns: 1fr;
+  }
+}
+.panel {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+.panel h3 {
+  color: #60a5fa;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+textarea {
+  width: 100%;
+  min-height: 400px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #e2e8f0;
+  padding: 1rem;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+button {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: transform 0.2s;
+}
+button:hover {
+  transform: translateY(-2px);
+}
+button.secondary {
+  background: #334155;
+}
+.error {
+  color: #f87171;
+  padding: 1rem;
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid #f87171;
+  border-radius: 8px;
+  margin-top: 1rem;
+  display: none;
+}
+.success {
+  color: #4ade80;
+  padding: 1rem;
+  background: rgba(74, 222, 128, 0.1);
+  border: 1px solid #4ade80;
+  border-radius: 8px;
+  margin-top: 1rem;
+  display: none;
+}
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 3rem;
+}
+.feature {
+  background: #1e293b;
+  border: 1px solid #334155;
+  padding: 1.5rem;
+  border-radius: 12px;
+  text-align: center;
+}
+.feature h4 {
+  color: #60a5fa;
+  margin-bottom: 0.5rem;
+}
+.feature p {
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+.footer {
+  text-align: center;
+  padding: 2rem;
+  color: #64748b;
+  border-top: 1px solid #1e293b;
+  margin-top: 3rem;
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>ConvertHub</h1>
+  <p>免费在线数据格式转换 · 支持 JSON / YAML / CSV / XML / Base64</p>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab active" data-tab="json-yaml">JSON ↔ YAML</button>
+    <button class="tab" data-tab="json-csv">JSON ⇄ CSV</button>
+    <button class="tab" data-tab="xml-json">XML ↔ JSON</button>
+    <button class="tab" data-tab="base64">Base64 编解码</button>
+    <button class="tab" data-tab="formatter">JSON 格式化</button>
+  </div>
+
+  <div id="json-yaml" class="converter active">
+    <div class="panel">
+      <h3>输入</h3>
+      <textarea id="json-yaml-input" placeholder='粘贴 JSON 或 YAML...'></textarea>
+    </div>
+    <div class="panel">
+      <h3>输出</h3>
+      <textarea id="json-yaml-output" placeholder="转换结果..."></textarea>
+      <div class="actions">
+        <button onclick="convertJsonYaml()">转换</button>
+        <button class="secondary" onclick="copyToClipboard('json-yaml-output')">复制</button>
+        <button class="secondary" onclick="swapJsonYaml()">交换</button>
+      </div>
+      <div id="json-yaml-error" class="error"></div>
+    </div>
+  </div>
+
+  <div id="json-csv" class="converter">
+    <div class="panel">
+      <h3>JSON 数组</h3>
+      <textarea id="json-csv-input" placeholder='粘贴 JSON 数组...'></textarea>
+    </div>
+    <div class="panel">
+      <h3>CSV</h3>
+      <textarea id="json-csv-output" placeholder="CSV 结果..."></textarea>
+      <div class="actions">
+        <button onclick="convertJsonCsv()">JSON → CSV</button>
+        <button class="secondary" onclick="convertCsvJson()">CSV → JSON</button>
+        <button class="secondary" onclick="copyToClipboard('json-csv-output')">复制</button>
+      </div>
+      <div id="json-csv-error" class="error"></div>
+    </div>
+  </div>
+
+  <div id="xml-json" class="converter">
+    <div class="panel">
+      <h3>输入</h3>
+      <textarea id="xml-json-input" placeholder="粘贴 XML 或 JSON..."></textarea>
+    </div>
+    <div class="panel">
+      <h3>输出</h3>
+      <textarea id="xml-json-output" placeholder="转换结果..."></textarea>
+      <div class="actions">
+        <button onclick="convertXmlJson()">XML → JSON</button>
+        <button class="secondary" onclick="convertJsonXml()">JSON → XML</button>
+        <button class="secondary" onclick="copyToClipboard('xml-json-output')">复制</button>
+      </div>
+      <div id="xml-json-error" class="error"></div>
+    </div>
+  </div>
+
+  <div id="base64" class="converter">
+    <div class="panel">
+      <h3>输入</h3>
+      <textarea id="base64-input" placeholder="粘贴文本..."></textarea>
+    </div>
+    <div class="panel">
+      <h3>输出</h3>
+      <textarea id="base64-output" placeholder="Base64 结果..."></textarea>
+      <div class="actions">
+        <button onclick="encodeBase64()">编码</button>
+        <button class="secondary" onclick="decodeBase64()">解码</button>
+        <button class="secondary" onclick="copyToClipboard('base64-output')">复制</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="formatter" class="converter">
+    <div class="panel">
+      <h3>输入 JSON</h3>
+      <textarea id="formatter-input" placeholder="粘贴未格式化的 JSON..."></textarea>
+    </div>
+    <div class="panel">
+      <h3>格式化结果</h3>
+      <textarea id="formatter-output" placeholder="格式化后的 JSON..."></textarea>
+      <div class="actions">
+        <button onclick="formatJson()">格式化</button>
+        <button class="secondary" onclick="minifyJson()">压缩</button>
+        <button class="secondary" onclick="copyToClipboard('formatter-output')">复制</button>
+      </div>
+      <div id="formatter-error" class="error"></div>
+    </div>
+  </div>
+
+  <div class="features">
+    <div class="feature">
+      <h4>🆓 完全免费</h4>
+      <p>无需注册，无需付费，打开即用</p>
+    </div>
+    <div class="feature">
+      <h4>🔒 本地处理</h4>
+      <p>数据在浏览器中转换，不会上传到服务器</p>
+    </div>
+    <div class="feature">
+      <h4>⚡ 即时转换</h4>
+      <p>毫秒级响应，无需等待</p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <p>ConvertHub © 2026 · 数据格式转换工具</p>
+</div>
+
+<script>
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.converter').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.tab).classList.add('active');
+  });
+});
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function showSuccess(id) {
+  const el = document.getElementById(id);
+  el.textContent = '✓ 转换成功';
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 2000);
+}
+
+function copyToClipboard(id) {
+  const el = document.getElementById(id);
+  el.select();
+  document.execCommand('copy');
+  alert('已复制到剪贴板');
+}
+
+// JSON ↔ YAML
+function convertJsonYaml() {
+  const input = document.getElementById('json-yaml-input').value.trim();
+  const output = document.getElementById('json-yaml-output');
+  const errorEl = document.getElementById('json-yaml-error');
+  errorEl.style.display = 'none';
+
+  if (!input) return;
+
+  try {
+    const obj = JSON.parse(input);
+    // Simple YAML-like output
+    output.value = jsonToYaml(obj);
+    showSuccess('json-yaml-success');
+  } catch (e) {
+    // Try parsing as YAML (simple)
+    try {
+      const obj = yamlToJson(input);
+      output.value = JSON.stringify(obj, null, 2);
+      showSuccess('json-yaml-success');
+    } catch (e2) {
+      showError('json-yaml-error', '解析失败：请输入有效的 JSON 或 YAML');
+    }
+  }
+}
+
+function jsonToYaml(obj, indent = 0) {
+  const spaces = '  '.repeat(indent);
+  if (Array.isArray(obj)) {
+    return obj.map(item => `${spaces}- ${jsonToYaml(item, indent + 1).trim()}`).join('\n');
+  } else if (typeof obj === 'object' && obj !== null) {
+    return Object.entries(obj).map(([k, v]) => {
+      const val = jsonToYaml(v, indent + 1);
+      return `${spaces}${k}: ${val.startsWith('\n') ? '\n' + val : val}`;
+    }).join('\n');
+  } else {
+    return String(obj);
+  }
+}
+
+function yamlToJson(yaml) {
+  const lines = yaml.split('\n');
+  const result = {};
+  let current = result;
+  const stack = [{ obj: result, indent: -1 }];
+
+  for (let line of lines) {
+    if (!line.trim()) continue;
+    const indent = line.search(/\S|$/);
+    const content = line.trim();
+
+    while (stack.length > 1 && indent <= stack[stack.length - 2].indent) {
+      stack.pop();
+    }
+
+    current = stack[stack.length - 1].obj;
+
+    if (content.startsWith('- ')) {
+      if (!Array.isArray(current)) {
+        const parent = stack[stack.length - 2].obj;
+        const key = Object.keys(parent).pop();
+        parent[key] = [];
+      }
+      const arr = Array.isArray(current) ? current : stack[stack.length - 2].obj[Object.keys(stack[stack.length - 2].obj).pop()];
+      const item = content.slice(2);
+      if (item.includes(':')) {
+        const [k, ...v] = item.split(':');
+        const newObj = {};
+        newObj[k.trim()] = v.join(':').trim();
+        arr.push(newObj);
+        stack.push({ obj: newObj, indent });
+      } else {
+        arr.push(item);
+      }
+    } else if (content.includes(':')) {
+      const [k, ...v] = content.split(':');
+      const value = v.join(':').trim();
+      current[k.trim()] = isNaN(value) ? value : Number(value);
+    }
+  }
+  return result;
+}
+
+function swapJsonYaml() {
+  const input = document.getElementById('json-yaml-input');
+  const output = document.getElementById('json-yaml-output');
+  const temp = input.value;
+  input.value = output.value;
+  output.value = temp;
+}
+
+// JSON ⇄ CSV
+function convertJsonCsv() {
+  const input = document.getElementById('json-csv-input').value.trim();
+  const output = document.getElementById('json-csv-output');
+  const errorEl = document.getElementById('json-csv-error');
+  errorEl.style.display = 'none';
+
+  try {
+    const arr = JSON.parse(input);
+    if (!Array.isArray(arr) || arr.length === 0) throw new Error('请输入 JSON 数组');
+
+    const headers = Object.keys(arr[0]);
+    let csv = headers.join(',') + '\n';
+    arr.forEach(item => {
+      csv += headers.map(h => {
+        const val = String(item[h] || '');
+        return val.includes(',') ? `"${val}"` : val;
+      }).join(',') + '\n';
+    });
+    output.value = csv;
+  } catch (e) {
+    showError('json-csv-error', '转换失败：' + e.message);
+  }
+}
+
+function convertCsvJson() {
+  const input = document.getElementById('json-csv-input').value.trim();
+  const output = document.getElementById('json-csv-output');
+  const errorEl = document.getElementById('json-csv-error');
+  errorEl.style.display = 'none';
+
+  try {
+    const lines = input.split('\n').filter(l => l.trim());
+    if (lines.length < 2) throw new Error('CSV 需要至少标题行和一行数据');
+
+    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+    const result = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+      const obj = {};
+      headers.forEach((h, idx) => obj[h] = values[idx] || '');
+      result.push(obj);
+    }
+    output.value = JSON.stringify(result, null, 2);
+  } catch (e) {
+    showError('json-csv-error', '转换失败：' + e.message);
+  }
+}
+
+// XML ↔ JSON
+function convertXmlJson() {
+  const input = document.getElementById('xml-json-input').value.trim();
+  const output = document.getElementById('xml-json-output');
+  const errorEl = document.getElementById('xml-json-error');
+  errorEl.style.display = 'none';
+
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(input, 'text/xml');
+    output.value = JSON.stringify(xmlToJson(doc.documentElement), null, 2);
+  } catch (e) {
+    showError('xml-json-error', 'XML 解析失败');
+  }
+}
+
+function convertJsonXml() {
+  const input = document.getElementById('xml-json-input').value.trim();
+  const output = document.getElementById('xml-json-output');
+  const errorEl = document.getElementById('xml-json-error');
+  errorEl.style.display = 'none';
+
+  try {
+    const obj = JSON.parse(input);
+    output.value = jsonToXml(obj);
+  } catch (e) {
+    showError('xml-json-error', 'JSON 解析失败');
+  }
+}
+
+function xmlToJson(node) {
+  const obj = {};
+  if (node.attributes.length > 0) {
+    obj['@attributes'] = {};
+    for (let attr of node.attributes) {
+      obj['@attributes'][attr.name] = attr.value;
+    }
+  }
+  for (let child of node.children) {
+    const childObj = xmlToJson(child);
+    if (obj[child.nodeName]) {
+      if (!Array.isArray(obj[child.nodeName])) {
+        obj[child.nodeName] = [obj[child.nodeName]];
+      }
+      obj[child.nodeName].push(childObj);
+    } else {
+      obj[child.nodeName] = childObj;
+    }
+  }
+  if (Object.keys(obj).length === 0) {
+    return node.textContent;
+  }
+  return obj;
+}
+
+function jsonToXml(obj, rootName = 'root') {
+  let xml = `<${rootName}>`;
+  for (let [key, value] of Object.entries(obj)) {
+    if (key === '@attributes') {
+      for (let [attr, val] of Object.entries(value)) {
+        xml = xml.replace(`>`, ` ${attr}="${val}">`);
+      }
+    } else if (Array.isArray(value)) {
+      value.forEach(item => {
+        xml += jsonToXml(item, key);
+      });
+    } else if (typeof value === 'object') {
+      xml += jsonToXml(value, key);
+    } else {
+      xml += `<${key}>${value}</${key}>`;
+    }
+  }
+  xml += `</${rootName}>`;
+  return xml;
+}
+
+// Base64
+function encodeBase64() {
+  const input = document.getElementById('base64-input').value;
+  const output = document.getElementById('base64-output');
+  try {
+    output.value = btoa(unescape(encodeURIComponent(input)));
+  } catch (e) {
+    output.value = '编码失败';
+  }
+}
+
+function decodeBase64() {
+  const input = document.getElementById('base64-input').value;
+  const output = document.getElementById('base64-output');
+  try {
+    output.value = decodeURIComponent(escape(atob(input)));
+  } catch (e) {
+    output.value = '解码失败：请输入有效的 Base64';
+  }
+}
+
+// Formatter
+function formatJson() {
+  const input = document.getElementById('formatter-input').value.trim();
+  const output = document.getElementById('formatter-output');
+  const errorEl = document.getElementById('formatter-error');
+  errorEl.style.display = 'none';
+
+  try {
+    const obj = JSON.parse(input);
+    output.value = JSON.stringify(obj, null, 2);
+  } catch (e) {
+    showError('formatter-error', 'JSON 解析失败：' + e.message);
+  }
+}
+
+function minifyJson() {
+  const input = document.getElementById('formatter-input').value.trim();
+  const output = document.getElementById('formatter-output');
+  const errorEl = document.getElementById('formatter-error');
+  errorEl.style.display = 'none';
+
+  try {
+    const obj = JSON.parse(input);
+    output.value = JSON.stringify(obj);
+  } catch (e) {
+    showError('formatter-error', 'JSON 解析失败：' + e.message);
+  }
+}
+</script>
+</body>
+</html>
