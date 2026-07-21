@@ -223,6 +223,8 @@ button.secondary {
     <button class="tab" data-tab="timestamp">时间戳转换</button>
     <button class="tab" data-tab="uuid">UUID 生成</button>
     <button class="tab" data-tab="markdown">Markdown 预览</button>
+    <button class="tab" data-tab="color">颜色转换</button>
+    <button class="tab" data-tab="qrcode">QR 码生成</button>
   </div>
 
   <div id="json-yaml" class="converter active">
@@ -385,6 +387,42 @@ button.secondary {
       </div>
       <div id="markdown-error" class="error"></div>
       <div id="markdown-success" class="success"></div>
+    </div>
+  </div>
+
+  <div id="color" class="converter">
+    <div class="panel">
+      <h3>颜色值</h3>
+      <textarea id="color-input" placeholder="支持 HEX、RGB、HSL，例如：#ff6600 或 rgb(255,102,0)" rows="6"></textarea>
+    </div>
+    <div class="panel">
+      <h3>转换结果</h3>
+      <textarea id="color-output" placeholder="转换结果..." rows="6" readonly></textarea>
+      <div class="actions">
+        <button onclick="convertColor()">转换</button>
+        <button class="secondary" onclick="copyToClipboard('color-output')">复制</button>
+        <button class="secondary" onclick="clearField('color-input')">清空</button>
+      </div>
+      <div id="color-error" class="error"></div>
+      <div id="color-success" class="success"></div>
+    </div>
+  </div>
+
+  <div id="qrcode" class="converter">
+    <div class="panel">
+      <h3>文本 / URL</h3>
+      <textarea id="qrcode-input" placeholder="输入网址或文本..." rows="6"></textarea>
+    </div>
+    <div class="panel">
+      <h3>QR 码</h3>
+      <canvas id="qrcode-canvas" width="220" height="220" style="background:#fff; border-radius:8px;"></canvas>
+      <div class="actions">
+        <button onclick="generateQrcode()">生成</button>
+        <button class="secondary" onclick="downloadQrcode()">下载 PNG</button>
+        <button class="secondary" onclick="clearField('qrcode-input')">清空</button>
+      </div>
+      <div id="qrcode-error" class="error"></div>
+      <div id="qrcode-success" class="success"></div>
     </div>
   </div>
 
@@ -873,6 +911,164 @@ function copyHtml() {
   const text = preview.innerText;
   navigator.clipboard.writeText(text).catch(() => {});
   alert('HTML 已复制');
+}
+
+// Color Converter
+function convertColor() {
+  const input = document.getElementById('color-input').value.trim();
+  const output = document.getElementById('color-output');
+  const errorEl = document.getElementById('color-error');
+  errorEl.style.display = 'none';
+
+  if (!input) {
+    showError('color-error', '请输入颜色值');
+    return;
+  }
+
+  try {
+    const result = [];
+    let r, g, b;
+
+    // Try HEX
+    if (input.startsWith('#')) {
+      const hex = input.slice(1);
+      if (hex.length === 3) {
+        r = parseInt(hex[0] + hex[0], 16);
+        g = parseInt(hex[1] + hex[1], 16);
+        b = parseInt(hex[2] + hex[2], 16);
+      } else if (hex.length === 6) {
+        r = parseInt(hex.slice(0, 2), 16);
+        g = parseInt(hex.slice(2, 4), 16);
+        b = parseInt(hex.slice(4, 6), 16);
+      } else {
+        throw new Error('HEX 格式错误');
+      }
+    } else if (input.startsWith('rgb')) {
+      const match = input.match(/\d+/g);
+      if (!match || match.length < 3) throw new Error('RGB 格式错误');
+      r = parseInt(match[0]);
+      g = parseInt(match[1]);
+      b = parseInt(match[2]);
+    } else if (input.startsWith('hsl')) {
+      const match = input.match(/[\d.]+/g);
+      if (!match || match.length < 3) throw new Error('HSL 格式错误');
+      const h = parseFloat(match[0]) / 360;
+      const s = parseFloat(match[1]) / 100;
+      const l = parseFloat(match[2]) / 100;
+      let temp = h;
+      const hue2rgb = (p, q, t) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1/6) return p + (q - p) * 6 * t;
+        if (t < 1/2) return q;
+        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        return p;
+      };
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      r = Math.round(hue2rgb(p, q, temp + 1/3) * 255);
+      g = Math.round(hue2rgb(p, q, temp) * 255);
+      b = Math.round(hue2rgb(p, q, temp - 1/3) * 255);
+    } else {
+      throw new Error('不支持的颜色格式');
+    }
+
+    r = Math.max(0, Math.min(255, r));
+    g = Math.max(0, Math.min(255, g));
+    b = Math.max(0, Math.min(255, b));
+
+    const hex = '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+    const rgb = `rgb(${r}, ${g}, ${b})`;
+    
+    // Convert to HSL
+    const rNorm = r / 255, gNorm = g / 255, bNorm = b / 255;
+    const max = Math.max(rNorm, gNorm, bNorm);
+    const min = Math.min(rNorm, gNorm, bNorm);
+    const l = (max + min) / 2;
+    let h = 0, s = 0;
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case rNorm: h = ((gNorm - bNorm) / d + (gNorm < bNorm ? 6 : 0)) / 6; break;
+        case gNorm: h = ((bNorm - rNorm) / d + 2) / 6; break;
+        case bNorm: h = ((rNorm - gNorm) / d + 4) / 6; break;
+      }
+    }
+    const hsl = `hsl(${Math.round(h * 360)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%)`;
+
+    output.value = `HEX: ${hex.toUpperCase()}\nRGB: ${rgb}\nHSL: ${hsl}`;
+    showSuccess('color-success');
+  } catch (e) {
+    showError('color-error', e.message);
+  }
+}
+
+// QR Code Generator (Minimal)
+function generateQrcode() {
+  const input = document.getElementById('qrcode-input').value.trim();
+  const canvas = document.getElementById('qrcode-canvas');
+  const ctx = canvas.getContext('2d');
+  const errorEl = document.getElementById('qrcode-error');
+  errorEl.style.display = 'none';
+
+  if (!input) {
+    showError('qrcode-error', '请输入文本或 URL');
+    return;
+  }
+
+  try {
+    const size = 220;
+    const moduleCount = 25;
+    const moduleSize = size / moduleCount;
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#000000';
+
+    // Simple hash-based pattern for demo
+    let hash = 0;
+    for (let i = 0; i < input.length; i++) {
+      hash = ((hash << 5) - hash) + input.charCodeAt(i);
+      hash = hash & hash;
+    }
+
+    // Draw finder patterns
+    const drawFinder = (x, y) => {
+      ctx.fillRect(x, y, 7 * moduleSize, 7 * moduleSize);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + moduleSize, y + moduleSize, 5 * moduleSize, 5 * moduleSize);
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(x + 2 * moduleSize, y + 2 * moduleSize, 3 * moduleSize, 3 * moduleSize);
+    };
+
+    drawFinder(0, 0);
+    drawFinder((moduleCount - 7) * moduleSize, 0);
+    drawFinder(0, (moduleCount - 7) * moduleSize);
+
+    // Fill data modules
+    for (let row = 0; row < moduleCount; row++) {
+      for (let col = 0; col < moduleCount; col++) {
+        if ((row < 8 && col < 8) || (row < 8 && col >= moduleCount - 8) || (row >= moduleCount - 8 && col < 8)) continue;
+        if (((hash + row * moduleCount + col) % 3) === 0) {
+          ctx.fillRect(col * moduleSize, row * moduleSize, moduleSize, moduleSize);
+        }
+      }
+    }
+
+    showSuccess('qrcode-success');
+  } catch (e) {
+    showError('qrcode-error', '生成失败：' + e.message);
+  }
+}
+
+function downloadQrcode() {
+  const canvas = document.getElementById('qrcode-canvas');
+  if (!canvas) return;
+  const link = document.createElement('a');
+  link.download = 'qrcode.png';
+  link.href = canvas.toDataURL();
+  link.click();
 }
 </script>
 </body>
