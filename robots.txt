@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /temp/
+Sitemap: https://ktq0912.github.io/converthub/sitemap.xml

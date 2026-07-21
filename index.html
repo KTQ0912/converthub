@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="ConvertHub 免费在线数据格式转换工具，支持 JSON、YAML、CSV、XML、Base64 编解码，纯前端本地处理，安全快捷。">
+<meta name="keywords" content="JSON转YAML, CSV转JSON, XML转JSON, Base64编解码, JSON格式化, 在线转换工具">
 <title>ConvertHub - 在线数据格式转换工具</title>
+<link rel="canonical" href="https://ktq0912.github.io/converthub/">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -182,6 +185,7 @@ button.secondary {
     <button class="tab" data-tab="xml-json">XML ↔ JSON</button>
     <button class="tab" data-tab="base64">Base64 编解码</button>
     <button class="tab" data-tab="formatter">JSON 格式化</button>
+    <button class="tab" data-tab="jwt">JWT 解码</button>
   </div>
 
   <div id="json-yaml" class="converter active">
@@ -278,6 +282,24 @@ button.secondary {
     </div>
   </div>
 
+  <div id="jwt" class="converter">
+    <div class="panel">
+      <h3>输入 JWT Token</h3>
+      <textarea id="jwt-input" placeholder="粘贴 JWT Token..."></textarea>
+    </div>
+    <div class="panel">
+      <h3>解码结果</h3>
+      <textarea id="jwt-output" placeholder="Header / Payload 解码结果..." readonly></textarea>
+      <div class="actions">
+        <button onclick="decodeJwt()">解码</button>
+        <button class="secondary" onclick="copyToClipboard('jwt-output')">复制</button>
+        <button class="secondary" onclick="clearField('jwt-input')">清空</button>
+      </div>
+      <div id="jwt-error" class="error"></div>
+      <div id="jwt-success" class="success"></div>
+    </div>
+  </div>
+
   <div class="features">
     <div class="feature">
       <h4>🆓 完全免费</h4>
@@ -297,6 +319,20 @@ button.secondary {
 <div class="footer">
   <p>ConvertHub © 2026 · 数据格式转换工具</p>
 </div>
+
+<!-- SEO -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "ConvertHub",
+  "url": "https://ktq0912.github.io/converthub/",
+  "description": "免费在线数据格式转换工具，支持 JSON、YAML、CSV、XML、Base64。",
+  "applicationCategory": "UtilityApplication",
+  "operatingSystem": "Any",
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "CNY"}
+}
+</script>
 
 <script>
 // Tab switching
@@ -600,6 +636,46 @@ function minifyJson() {
     output.value = JSON.stringify(obj);
   } catch (e) {
     showError('formatter-error', 'JSON 解析失败：' + e.message);
+  }
+}
+
+// JWT Decoder
+function base64UrlDecode(str) {
+  let s = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (s.length % 4) {
+    s += '=';
+  }
+  return decodeURIComponent(
+    Array.from(atob(s))
+      .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+      .join('')
+  );
+}
+
+function decodeJwt() {
+  const input = document.getElementById('jwt-input').value.trim();
+  const output = document.getElementById('jwt-output');
+  const errorEl = document.getElementById('jwt-error');
+  errorEl.style.display = 'none';
+
+  if (!input) {
+    showError('jwt-error', '请输入 JWT Token');
+    return;
+  }
+
+  try {
+    const parts = input.split('.');
+    if (parts.length !== 3) {
+      throw new Error('无效的 JWT 格式，应为 header.payload.signature');
+    }
+
+    const header = JSON.parse(base64UrlDecode(parts[0]));
+    const payload = JSON.parse(base64UrlDecode(parts[1]));
+
+    output.value = `【Header】\n${JSON.stringify(header, null, 2)}\n\n【Payload】\n${JSON.stringify(payload, null, 2)}`;
+    showSuccess('jwt-success');
+  } catch (e) {
+    showError('jwt-error', '解码失败：' + e.message);
   }
 }
 </script>
