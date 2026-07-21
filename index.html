@@ -133,6 +133,40 @@ button.secondary {
   margin-top: 1rem;
   display: none;
 }
+.preview-panel {
+  min-height: 200px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 1rem;
+  overflow: auto;
+}
+.preview-panel h1, .preview-panel h2, .preview-panel h3 {
+  color: #60a5fa;
+  margin: 0.5rem 0;
+}
+.preview-panel p {
+  color: #e2e8f0;
+  margin: 0.5rem 0;
+  line-height: 1.6;
+}
+.preview-panel ul, .preview-panel ol {
+  color: #e2e8f0;
+  padding-left: 1.5rem;
+}
+.preview-panel code {
+  background: #334155;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+}
+.preview-panel pre {
+  background: #334155;
+  padding: 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
 .success {
   color: #4ade80;
   padding: 1rem;
@@ -186,6 +220,9 @@ button.secondary {
     <button class="tab" data-tab="base64">Base64 编解码</button>
     <button class="tab" data-tab="formatter">JSON 格式化</button>
     <button class="tab" data-tab="jwt">JWT 解码</button>
+    <button class="tab" data-tab="timestamp">时间戳转换</button>
+    <button class="tab" data-tab="uuid">UUID 生成</button>
+    <button class="tab" data-tab="markdown">Markdown 预览</button>
   </div>
 
   <div id="json-yaml" class="converter active">
@@ -297,6 +334,57 @@ button.secondary {
       </div>
       <div id="jwt-error" class="error"></div>
       <div id="jwt-success" class="success"></div>
+    </div>
+  </div>
+
+  <div id="timestamp" class="converter">
+    <div class="panel">
+      <h3>时间戳</h3>
+      <textarea id="timestamp-input" placeholder="输入时间戳，如 1718899200" rows="6"></textarea>
+    </div>
+    <div class="panel">
+      <h3>日期时间</h3>
+      <textarea id="timestamp-output" placeholder="转换结果..." rows="6" readonly></textarea>
+      <div class="actions">
+        <button onclick="timestampToDate()">时间戳 → 日期</button>
+        <button class="secondary" onclick="dateToTimestamp()">日期 → 时间戳</button>
+        <button class="secondary" onclick="clearField('timestamp-input')">清空</button>
+      </div>
+      <div id="timestamp-error" class="error"></div>
+      <div id="timestamp-success" class="success"></div>
+    </div>
+  </div>
+
+  <div id="uuid" class="converter">
+    <div class="panel">
+      <h3>UUID 生成器</h3>
+      <textarea id="uuid-output" placeholder="点击生成..." rows="8" readonly></textarea>
+      <div class="actions">
+        <button onclick="generateUuid()">生成 UUID</button>
+        <button class="secondary" onclick="generateUuidv4()">生成 v4</button>
+        <button class="secondary" onclick="copyToClipboard('uuid-output')">复制</button>
+        <button class="secondary" onclick="clearField('uuid-output')">清空</button>
+      </div>
+      <div id="uuid-error" class="error"></div>
+      <div id="uuid-success" class="success"></div>
+    </div>
+  </div>
+
+  <div id="markdown" class="converter">
+    <div class="panel">
+      <h3>Markdown 输入</h3>
+      <textarea id="markdown-input" placeholder="# Hello World..." rows="10"></textarea>
+    </div>
+    <div class="panel">
+      <h3>预览</h3>
+      <div id="markdown-preview" class="preview-panel"></div>
+      <div class="actions">
+        <button onclick="renderMarkdown()">预览</button>
+        <button class="secondary" onclick="copyHtml()">复制 HTML</button>
+        <button class="secondary" onclick="clearField('markdown-input')">清空</button>
+      </div>
+      <div id="markdown-error" class="error"></div>
+      <div id="markdown-success" class="success"></div>
     </div>
   </div>
 
@@ -677,6 +765,110 @@ function decodeJwt() {
   } catch (e) {
     showError('jwt-error', '解码失败：' + e.message);
   }
+}
+
+// Timestamp Converter
+function timestampToDate() {
+  const input = document.getElementById('timestamp-input').value.trim();
+  const output = document.getElementById('timestamp-output');
+  const errorEl = document.getElementById('timestamp-error');
+  errorEl.style.display = 'none';
+
+  try {
+    const ts = Number(input);
+    if (isNaN(ts)) throw new Error('请输入有效的时间戳');
+    const date = new Date(ts > 1e12 ? ts : ts * 1000);
+    output.value = date.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+    showSuccess('timestamp-success');
+  } catch (e) {
+    showError('timestamp-error', e.message);
+  }
+}
+
+function dateToTimestamp() {
+  const input = document.getElementById('timestamp-input').value.trim();
+  const output = document.getElementById('timestamp-output');
+  const errorEl = document.getElementById('timestamp-error');
+  errorEl.style.display = 'none';
+
+  try {
+    const date = new Date(input);
+    if (isNaN(date.getTime())) throw new Error('请使用正确日期格式，如 2024-06-21 12:00:00');
+    output.value = Math.floor(date.getTime() / 1000).toString();
+    showSuccess('timestamp-success');
+  } catch (e) {
+    showError('timestamp-error', e.message);
+  }
+}
+
+// UUID Generator
+function generateUuid() {
+  const output = document.getElementById('uuid-output');
+  const el = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+  );
+  output.value = el;
+}
+
+function generateUuidv4() {
+  generateUuid();
+}
+
+// Markdown Parser (Minimal)
+function parseMarkdown(md) {
+  let html = md
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  html = html.replace(/^###### (.*$)/gim, '<h6>$1</h6>');
+  html = html.replace(/^##### (.*$)/gim, '<h5>$1</h5>');
+  html = html.replace(/^#### (.*$)/gim, '<h4>$1</h4>');
+  html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+  html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+  html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+  html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  html = html.replace(/^\- (.*$)/gim, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+
+  html = html.replace(/^\d+\. (.*$)/gim, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>)/s, '<ol>$1</ol>');
+
+  html = html.replace(/\n/g, '<br>');
+  return html;
+}
+
+function renderMarkdown() {
+  const input = document.getElementById('markdown-input').value.trim();
+  const preview = document.getElementById('markdown-preview');
+  const errorEl = document.getElementById('markdown-error');
+  errorEl.style.display = 'none';
+
+  if (!input) {
+    preview.innerHTML = '';
+    return;
+  }
+
+  try {
+    preview.innerHTML = parseMarkdown(input);
+    showSuccess('markdown-success');
+  } catch (e) {
+    showError('markdown-error', '渲染失败：' + e.message);
+  }
+}
+
+function copyHtml() {
+  const preview = document.getElementById('markdown-preview');
+  if (!preview) return;
+  const text = preview.innerText;
+  navigator.clipboard.writeText(text).catch(() => {});
+  alert('HTML 已复制');
 }
 </script>
 </body>
